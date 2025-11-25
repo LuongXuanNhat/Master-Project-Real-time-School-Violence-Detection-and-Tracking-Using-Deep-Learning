@@ -1,0 +1,4 @@
+[Data refer] https://www.kaggle.com/code/nhatluongxuan/violence-detection-and-classification/edit
+[Dataset] https://www.kaggle.com/datasets/sparshdrolia/violence/data 
+
+

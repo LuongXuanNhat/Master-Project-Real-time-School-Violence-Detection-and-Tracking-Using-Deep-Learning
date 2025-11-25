@@ -41,17 +41,14 @@ Cảnh báo thời gian thực
 2.3. Theo dõi đối tượng: DeepSORT, ByteTrack
 2.4. Nhận dạng hành động trong video
 
-CNN + LSTM
+- CNN + LSTM
+- I3D
+- SlowFast
+- X3D
+- ViViT / Video Swin Transformer
 
-I3D
-
-SlowFast
-
-X3D
-
-ViViT / Video Swin Transformer
-2.5. Anomaly detection trong video giám sát
-2.6. Các chỉ số đánh giá
+  2.5. Anomaly detection trong video giám sát
+  2.6. Các chỉ số đánh giá
 
 mAP (object detection)
 
@@ -172,11 +169,11 @@ Dataset: RWF-2000
 Backbone: ResNet50 + LSTM / 3D CNN
 
 🗂️ 4. Mô hình nên dùng (tối ưu nhất)
-Nhiệm vụ	Mô hình nên dùng	Lý do
-Phát hiện người	YOLOv8s hoặc YOLOv10n	Nhẹ, FPS cao, chính xác
-Tracking	ByteTrack	Ổn định, tốt hơn DeepSORT
-Violence detection (real-time)	X3D hoặc SlowFast	SlowFast chính xác cao nhất
-Violence detection (dễ làm)	ResNet50 + LSTM	Training đơn giản
+Nhiệm vụ Mô hình nên dùng Lý do
+Phát hiện người YOLOv8s hoặc YOLOv10n Nhẹ, FPS cao, chính xác
+Tracking ByteTrack Ổn định, tốt hơn DeepSORT
+Violence detection (real-time) X3D hoặc SlowFast SlowFast chính xác cao nhất
+Violence detection (dễ làm) ResNet50 + LSTM Training đơn giản
 🧪 5. Dataset phù hợp
 Dataset bạo lực trong video
 
@@ -207,10 +204,10 @@ Dùng áo khẩu trang để tránh lộ danh tính
 Gắn blur mặt → đảm bảo đạo đức nghiên cứu
 
 📈 6. Baseline để so sánh trong chương 4
-Thành phần	Baseline	Mô hình đề xuất
-Detection	YOLOv5s	YOLOv8s / YOLOv10n
-Tracking	DeepSORT	ByteTrack
-Violence	3D-CNN	SlowFast/X3D
+Thành phần Baseline Mô hình đề xuất
+Detection YOLOv5s YOLOv8s / YOLOv10n
+Tracking DeepSORT ByteTrack
+Violence 3D-CNN SlowFast/X3D
 
 Bạn sẽ có bảng so sánh rất đẹp trong luận văn.
 
