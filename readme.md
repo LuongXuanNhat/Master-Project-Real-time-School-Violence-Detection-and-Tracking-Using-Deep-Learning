@@ -141,8 +141,150 @@ Backbone: ResNet50 + LSTM / 3D CNN
 Nhiệm vụ Mô hình nên dùng Lý do
 Phát hiện người YOLOv8s hoặc YOLOv10n Nhẹ, FPS cao, chính xác
 Tracking ByteTrack Ổn định, tốt hơn DeepSORT
-Violence detection (real-time) X3D hoặc SlowFast SlowFast chính xác cao nhất
+Violence detection (real-time) X3D hoặc SlowFast chính xác cao nhất
 Violence detection (dễ làm) ResNet50 + LSTM Training đơn giản
+
+**YOLOv8** (Ultralytics):
+Lý do chọn:
+
+> Hỗ trợ Pose Estimation (Quan trọng nhất): YOLOv8 có phiên bản yolov8-pose. Nó không chỉ phát hiện người mà còn vẽ được khung xương (khớp vai, khuỷu tay, cổ tay...). Để phân biệt Đùa giỡn và Đánh nhau, bạn cần phân tích sự di chuyển của các khớp xương này chứ không chỉ là cái khung bao quanh người (Bounding Box).
+> Tích hợp sẵn Tracking: YOLOv8 tích hợp sẵn BoT-SORT và ByteTrack. Bạn cần cái này để theo dõi một học sinh cụ thể qua các khung hình liên tiếp xem họ đang di chuyển nhanh hay chậm.
+> Cộng đồng cực lớn: Khi làm luận văn, gặp lỗi (bug) là chuyện thường. YOLOv8 có cộng đồng hỗ trợ lớn nhất, dễ tìm cách fix lỗi nhất.
+> Khuyên dùng: yolov8n-pose (bản nano) hoặc yolov8s-pose (bản small) để đạt tốc độ thời gian thực cao nhất trên thiết bị hạn chế.
+
+**YOLOv10** (Tsinghua University) - Lựa chọn cho tốc độ (Speed)
+Nếu tiêu chí của bạn là "Real-time" trên các thiết bị yếu (như Jetson Nano, Raspberry Pi hay Laptop không có GPU xịn), YOLOv10 là ứng cử viên số 1.
+Lý do chọn:
+
+> Loại bỏ NMS (Non-Maximum Suppression): Các bản YOLO cũ tốn thời gian để lọc bớt các khung hình trùng nhau. YOLOv10 bỏ bước này, giúp độ trễ (latency) giảm đáng kể.
+> SOTA về hiệu năng: Ở cùng một mức độ chính xác, YOLOv10 chạy nhanh hơn và tốn ít tài nguyên tính toán hơn v8 hay v9.
+> Tốt cho môi trường đông đúc: Trong trường học giờ ra chơi, học sinh đứng chen chúc. YOLOv10 xử lý hiện tượng chồng lấn (occlusion) khá tốt.
+> Nhược điểm: Hiện tại tập trung mạnh vào Object Detection, phần hỗ trợ Pose Estimation chưa mạnh mẽ và "mì ăn liền" bằng hệ sinh thái của Ultralytics (v8/v11).
+
+#### So sánh 3 ứng cử viên: ResNet+LSTM, SlowFast, X3D
+
+Để phân biệt được `"Đánh thật"` (lực mạnh, tốc độ cao, gia tốc lớn) và `"Đùa giỡn"` (lực nhẹ, ngập ngừng), mô hình cần khả năng hiểu sâu về Temporal (Thời gian/Chuyển động).
+**ResNet50 + LSTM**:
+Cơ chế: ResNet trích xuất đặc trưng từng ảnh, LSTM xâu chuỗi lại.
+Đánh giá: Lỗi thời (Outdated). Mô hình này tách biệt không gian và thời gian quá rạch ròi. Nó rất yếu trong việc cảm nhận sự thay đổi tinh tế về tốc độ (ví dụ: cú đấm nhanh vs cú vung tay chậm).
+Kết luận: Không nên dùng nếu muốn độ chính xác cao cho bài toán khó này.
+**SlowFast** (Facebook AI):
+Cơ chế: 2 nhánh song song. Nhánh "Chậm" nhìn chi tiết hình ảnh, nhánh "Nhanh" nhìn chuyển động.
+Đánh giá: Rất chính xác. Nó là chuẩn mực để phát hiện hành động trong vài năm trước. Khả năng phân biệt đánh/đùa rất tốt.
+Nhược điểm: Nặng. Nó ngốn tài nguyên tính toán lớn, khó chạy Real-time nếu phần cứng không rất mạnh.
+**X3D** (Facebook AI - Bản nâng cấp của SlowFast):
+Cơ chế: Mạng 3D ConvNet được tối ưu hóa cực đại (Efficient). Nó mở rộng mô hình theo nhiều chiều (frame rate, duration, resolution...) một cách thông minh.
+Đánh giá: Chân ái cho Real-time. X3D nhẹ hơn SlowFast rất nhiều lần nhưng độ chính xác tương đương (thậm chí cao hơn trong một số bộ dữ liệu).
+
+> **Kết luận: Nên chọn X3D. Đây là SOTA (State-of-the-Art) cho các bài toán nhận diện hành động hiệu quả (Efficient Action Recognition)**.
+
+###### Phương án thay thế nhẹ hơn: Pose-based (Gợi ý thêm)
+
+Nếu máy tính của bạn chạy X3D vẫn bị lag (FPS thấp), hãy xem xét phương án dùng Skeleton (Bộ xương):
+Mô hình: YOLOv8-Pose + ST-GCN (Spatial Temporal Graph Convolutional Network).
+Lý do:
+X3D xử lý video (pixel RGB) nên vẫn khá nặng.
+ST-GCN chỉ xử lý tọa độ các điểm khớp xương (file text tọa độ) -> Siêu nhẹ, siêu nhanh.
+Để phân biệt "Đùa" và "Đánh", gia tốc của khớp cổ tay và khuỷu tay là đặc trưng rõ nhất. ST-GCN học đặc trưng này cực tốt.
+
+## So sánh Skeleton Model vs X3D cho phát hiện bạo lực học đường
+
+### Skeleton Model thắng áp đảo
+
+**Kiến trúc đề xuất:**
+
+- Detector: YOLOv8-Pose (lấy tọa độ xương + bounding box)
+- Classifier: ST-GCN hoặc LSTM
+
+---
+
+## 4 lý do Skeleton Model phù hợp với trường học
+
+### 1. Privacy (Bảo vệ quyền riêng tư)
+
+**X3D:**
+
+- Sử dụng hình ảnh RGB trực tiếp
+- Mặt mũi, quần áo, không gian lớp đều vào mô hình
+- Nhạy cảm với trẻ vị thành niên
+
+**Skeleton:**
+
+- Chỉ xử lý tọa độ điểm (khuỷu tay, đầu gối, vai...)
+- Có thể vứt bỏ hình ảnh gốc sau khi detect
+- Chỉ lưu metadata "xương que củi"
+
+**→ Tính nhân văn và khả thi cao cho luận văn**
+
+### 2. Chống nhiễu nền (Background Robustness)
+
+**X3D:**
+
+- Học trên pixel → dễ bị "lừa" bởi phông nền
+- Trường học lộn xộn: bàn ghế, sách vở, tranh ảnh
+- Có thể học thuộc góc tường thay vì hành vi
+
+**Skeleton:**
+
+- Loại bỏ hoàn toàn nhiễu nền
+- Chuyển động xương giống nhau dù đánh ở đâu (lớp, hành lang, sân)
+- Generalization tốt hơn
+
+### 3. Phân biệt "Lực" (Đùa vs Thật) - Yêu cầu cốt lõi
+
+**X3D:**
+
+- CNN khó cảm nhận gia tốc/lực từ pixel màu sắc
+
+**Skeleton:**
+
+- Có tọa độ (x, y) theo thời gian t
+- Tính toán trực tiếp:
+  - **Vận tốc**: Khoảng cách di chuyển giữa 2 frame
+  - **Gia tốc**: Độ thay đổi vận tốc
+- Đấm thật: gia tốc cực lớ, giật cục
+- Đấm đùa: đều đều, chậm hơn
+
+**→ ST-GCN cực kỳ nhạy bén với đặc trưng vật lý này**
+
+### 4. Góc quay CCTV (High angle view)
+
+**X3D:**
+
+- Pre-train trên Kinetics-400 (quay ngang: phim/youtube)
+- Góc trên cao: đầu to chân bé → mô hình "ngáo"
+- Dễ bị biến dạng
+
+**Skeleton:**
+
+- Quan hệ giữa khớp xương không đổi (tay-vai, đầu-cổ)
+- YOLOv8-Pose train trên COCO đa dạng góc độ
+- Bắt xương tốt hơn bắt pixel
+
+---
+
+## Nhược điểm duy nhất của Skeleton
+
+### Tương tác với đồ vật
+
+- Học sinh dùng ghế/sách ném nhau:
+  - **X3D**: Nhìn thấy ghế/sách → Nhận diện tốt
+  - **Skeleton**: Chỉ thấy người múa tay → Nhận diện kém
+
+### Khắc phục
+
+- Giới hạn phạm vi: "Bạo lực cơ học (tay chân)"
+- Train thêm YOLO để detect vật nguy hiểm (ghế, gậy)
+
+---
+
+## Lý do chọn Skeleton Model
+
+✅ **Nhẹ hơn**: Real-time mượt trên máy cấu hình vừa
+
+✅ **Chính xác hơn**: Phân loại hành động giả vờ nhờ tính gia tốc
+
+✅ **Thân thiện môi trường học đường**: Privacy + chống nhiễu nền
 
 # 🧪 5. Dataset phù hợp
 

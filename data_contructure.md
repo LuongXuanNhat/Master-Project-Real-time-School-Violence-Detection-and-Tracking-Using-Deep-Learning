@@ -5,25 +5,22 @@
 Cấu trúc chuẩn dạng "clips + metadata"
 
 ```
+Text
 dataset/
-    violent/
-        clip_0001.mp4
-        clip_0002.mp4
-        clip_0003.mp4
+    raw_videos/ (Video gốc CCTV của bạn)
+        clip_001.mp4
         ...
-    non_violent/
-        clip_0001.mp4
-        clip_0002.mp4
-        clip_0003.mp4
-        ...
-    annotations/
+    annotations/ (File JSON chứa Metadata - Giữ nguyên làm Master Data)
         train.json
         val.json
-        test.json
-    splits/
-        train_list.txt
-        val_list.txt
-        test_list.txt
+
+    # ĐÂY LÀ PHẦN MỚI
+    processed_skeletons/
+        train/
+            clip_001_person_1.npy  <-- File chứa chuỗi tọa độ (T frames x 17 points x 3 channels)
+            clip_001_person_2.npy
+            ...
+        val/
 ```
 
 Annotations định dạng JSON mẫu:
@@ -356,6 +353,23 @@ Một học sinh chạy trốn (gợi ý có đe doạ phía sau).
 Giáo viên vào dừng hành vi.
 ```
 
+Activity_type (10 – 12 loại cốt lõi - tham khảo):
+
+```
+punching
+kicking
+pushing_shoving
+grabbing_pulling
+wrestling_fighting
+playful_fooling
+tag_running
+martial_arts_training
+sports_contact
+accidental_collision
+verbal_argument
+bullying_non_physical
+```
+
 ### Hướng dẫn xây dựng dữ liệu và hệ thống
 
 Dữ liệu video bạo lực học đường thường không có sẵn do tính nhạy cảm và đạo đức nghiên cứu. Dưới đây là cách bạn có thể tự xây dựng dữ liệu:
@@ -376,3 +390,95 @@ Dữ liệu video bạo lực học đường thường không có sẵn do tín
 5. **Chia tách dữ liệu**:
    - Chia tập dữ liệu thành các phần huấn luyện, kiểm tra và xác nhận để đánh giá hiệu suất của mô hình.
    - Đảm bảo rằng mỗi phần có sự đa dạng về tình huống bạo lực và không bạo lực để mô hình học tốt hơn.
+
+### Thiết kế hệ thống phát hiện bạo lực dựa trên dữ liệu xương (skeleton data)
+
+#### Quy trình tiền xử lý (Preprocessing Pipeline)
+
+**Bước chuyển đổi** (Offline Preprocessing).
+Mục tiêu: Chuyển đổi từ Video (Pixels) -> Skeleton Sequence (Coordinates).
+
+Bước 1: Trích xuất khung xương (Extraction Script)
+Một script Python sử dụng YOLOv8-Pose để chạy qua toàn bộ thư mục raw_videos.
+Input: Video .mp4.
+Process:
+
+- Dùng YOLOv8-Pose detect từng frame.
+- Dùng thuật toán Tracking (tích hợp sẵn trong Ultralytics như BoT-SORT) để theo dõi từng ID người (id_1, id_2...). Điều này cực quan trọng để tạo ra chuỗi hành động liên tục của 1 người.
+- Lưu lại tọa độ 17 điểm khớp (Keypoints) của mỗi ID qua các frame. Định dạng mỗi frame là vector: (x, y, confidence score).
+  Output:` Với mỗi video, bạn sẽ lưu ra nhiều file .npy (NumPy), mỗi file ứng với một người trong video đó.`
+  Ví dụ: Video có 2 học sinh đánh nhau -> Tạo ra clip_001_id1.npy và clip_001_id2.npy.
+
+Bước 2: Gán nhãn từ JSON (Labeling Strategy)
+Lúc này, đọc file train.json để gán nhãn cho các file .npy vừa tạo. Đây là lúc logic Hard Negative của bạn tỏa sáng:
+Tạo một file Index (ví dụ train_data.pkl) chứa danh sách các file xương và nhãn tương ứng:
+
+```
+data_list = []
+
+for video_name, info in json_data.items():
+    # 1. Xác định nhãn hành động (Action Label)
+    if info['violence_binary'] == 1:
+        label = 0 # VIOLENCE
+    elif info['intent'] == 'playful':
+        label = 2 # PLAYING / ROUGH_PLAY (Quan trọng để phân biệt gia tốc)
+    else:
+        label = 1 # NORMAL (Đi lại, chạy nhảy)
+
+    # 2. Tìm các file xương tương ứng với video này
+    # Lưu ý: Bạn có thể lọc chỉ lấy những người tham gia hành động chính
+    skeleton_files = find_skeleton_files(video_name)
+
+    for skel_file in skeleton_files:
+        data_list.append({
+            'path': skel_file, # Đường dẫn đến file .npy
+            'label': label
+        })
+```
+
+#### Quy trình Huấn luyện (Training Pipeline)
+
+Bây giờ bạn sẽ train model (ST-GCN hoặc LSTM) dựa trên dữ liệu tọa độ.
+Model Input:
+
+> Tensor kích thước (Batch_Size, Channels, Frames, Vertices, Person).
+> Channels: 3 (tọa độ x, y và độ tin cậy score).
+> Frames: Ví dụ 30 frames (bạn cần padding hoặc sampling nếu video dài ngắn khác nhau).
+> Vertices: 17 (số khớp xương của COCO format).
+> Model Output: Class probabilities (0: Violence, 1: Normal, 2: Playing).
+
+Tại sao cách này ưu việt hơn X3D cho bài toán?
+Model sẽ học được rằng: Class 0 (Đánh thật) có sự thay đổi tọa độ (x, y) ở tay cực nhanh và dứt khoát. Class 2 (Đùa) cũng vung tay nhưng velocity thấp hơn và trajectory (quỹ đạo) cong hơn.
+
+#### Hệ thống Real-time thực tế (Inference Flow)
+
+Khi triển khai (Deploy) ra thực tế, luồng xử lý sẽ như sau:
+
+**Camera Stream**: Đọc từng frame.
+**YOLOv8-Pose + Tracking:**
+
+- Detect người và xương.
+- Gán ID (ví dụ: Học sinh A là ID 101).
+
+**Buffer** (Bộ đệm):
+Hệ thống sẽ giữ một hàng đợi (Queue) cho ID 101.
+Cứ mỗi frame, đẩy tọa độ xương vào Queue.
+Khi Queue đủ 30 frames (khoảng 1 giây), lấy cụm dữ liệu đó ra.
+
+**Skeleton Model Classifier**:
+Đưa cụm 30 frames tọa độ vào model ST-GCN/LSTM.
+Model trả về: "Đang nô đùa" (Class 2).
+
+**Decision**:
+Nếu là Class 2 -> Không cảnh báo.
+Nếu là Class 0 -> Gửi cảnh báo "BẠO LỰC".
+
+## Tóm lại thay đổi chính so với phương án cũ
+
+| Đặc điểm                   | Phương án cũ (X3D)                         | Phương án mới (Skeleton)           |
+| -------------------------- | ------------------------------------------ | ---------------------------------- |
+| **Dữ liệu đã xử lý**       | Các file video .mp4 ngắn (Crop từng người) | Các file .npy chứa tọa độ xương    |
+| **Dung lượng data**        | Rất nặng (GB đến TB)                       | Siêu nhẹ (MB)                      |
+| **Đầu vào Model**          | Pixels (Hình ảnh màu)                      | Coordinates (Số liệu toán học)     |
+| **Khả năng phân biệt đùa** | Trung bình (Dựa trên hình ảnh)             | Rất tốt (Dựa trên gia tốc/vận tốc) |
+| **Tính riêng tư**          | Thấp (Lộ mặt)                              | Cao (Chỉ thấy xương)               |
