@@ -2,6 +2,24 @@ https://ieeexplore.ieee.org/document/10914712
 
 https://ieeexplore.ieee.org/document/10151132
 
+[3] Mạng tích chập siêu đồ thị thích ứng cho nhận dạng hành động con người dựa trên khung xương với các kết nối ảo
+https://openaccess.thecvf.com/content/ICCV2025/html/Zhou_Adaptive_Hyper-Graph_Convolution_Network_for_Skeleton-based_Human_Action_Recognition_with_ICCV_2025_paper.html
 
+[4] ESTS-GCN: Một tập hợp các mạng tích chập đồ thị dựa trên khung xương không gian-thời gian để phát hiện bạo lực
+https://onlinelibrary.wiley.com/doi/abs/10.1155/2024/2323337 (Hay)
 
+[5] Một khuôn khổ để phát hiện hành vi chiến đấu dựa trên các điểm mấu chốt của tư thế xương người.
+https://www.sciencedirect.com/science/article/pii/S1077314224002042
+
+[6] Mạng nơ-ron gai dựa trên tổn thất hỗn loạn để phát hiện hành vi bắt nạt nhằm bảo vệ quyền riêng tư ở nơi công cộng.
+https://www.sciencedirect.com/science/article/pii/S1568494624014170
+
+[7] Phát hiện bạo lực bằng cách sử dụng dữ liệu khung xương với mạng tích chập đồ thị  
+https://link.springer.com/chapter/10.1007/978-981-97-9616-8_7 (VN)
+
+[8] Phát hiện hành vi bạo lực của con người trong video bằng cách sử dụng học sâu 3D ResNet18
+https://link.springer.com/article/10.1007/s42979-024-03243-z
+
+[9] Mới 28/06/2025 Nâng cao khả năng phát hiện bạo lực bằng phân tích chuyển động khung xương dựa trên đồ thị
+https://link.springer.com/article/10.1007/s42979-025-04118-7?fromPaywallRec=true
 
