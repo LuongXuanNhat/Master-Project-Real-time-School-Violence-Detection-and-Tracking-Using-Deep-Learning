@@ -1,0 +1,4 @@
+Bài tập giữa kỳ: Anh / Chị chọn chủ đề đề làm đề cương, tìm tối thiểu 5 bài báo liên quan đế chủ đề nghiên cứu, với mỗi bài báo, cần cung cấp các thông tin sau
+1. Đăng trên tạp chí / hội nghị nào? IF và xếp hạng Q (Theo SCImago) nếu là tạp chí; ranking nếu là hội nghị.
+2. Tóm tắt các đóng góp chính của bài báo, nêu điểm mạnh và điểm yếu (Nếu có).
+3. Có thể cải thiện một trong các điểm yếu trên không? Nếu có thì ý tưởng như thế nào?
